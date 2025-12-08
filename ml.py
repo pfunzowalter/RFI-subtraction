@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 import os
 import yaml
 
-# --- Configuration Constants ---
+# --- Configuration Constants (Unchanged) ---
 
 CONFIG = {
     'K': 1024,
     'DATASET_FILE': 'astro_rfi_dataset.npz',
-    'NUM_SAMPLES': 10000,
+    'NUM_SAMPLES': 100000,
     'SPLIT_RATIO': 0.9,
     'BATCH_SIZE': 32,
     'LEARNING_RATE': 0.0002,
@@ -25,8 +25,7 @@ CONFIG = {
 }
 K = CONFIG['K'] # Convenience constant
 
-
-# --- Data Loading and Custom Dataset ---
+# --- Data Loading and Custom Dataset (Unchanged) ---
 class AstroRFIDataset(Dataset):
     def __init__(self, inputs, targets):
         # inputs are S (S=Tg+Tng), targets are T_ng (RFI)
@@ -66,14 +65,14 @@ def prepare_dataloaders(config, file_path):
     
     return train_loader, val_loader, val_inputs, val_targets
 
-# --- Model Definition: RFINet (3-Layer U-Net-like Architecture) ---
+# --- Model Definition: RFINet (Unchanged) ---
 class RFINet(nn.Module):
     """3-layer Encoder/Decoder network using Linear layers for 1D time stream RFI recovery."""
     def __init__(self, input_size, z_dim):
         super(RFINet, self).__init__()
         
-        h1_dim = input_size // 2  # 512
-        h2_dim = h1_dim // 2      # 256
+        h1_dim = input_size // 2 # 512
+        h2_dim = h1_dim // 2 	# 256
         
         # --- Encoder (Compression) ---
         self.encoder = nn.Sequential(
@@ -102,7 +101,7 @@ class RFINet(nn.Module):
         # Reshape output back to (batch, 1, K)
         return decoded.view(decoded.size(0), 1, -1)
 
-# --- Trainer Class ---
+# --- Trainer Class (Modified) ---
 class Trainer:
     def __init__(self, model, config, device):
         self.model = model
@@ -144,15 +143,48 @@ class Trainer:
         print(f"Model initialized with {sum(p.numel() for p in self.model.parameters() if p.requires_grad)} trainable parameters.")
         print("Starting training...")
         
+        # Initialize lists to store training history
+        history = {'train_loss': [], 'val_loss': []}
+        
         for epoch in range(self.config['EPOCHS']):
             train_loss = self.train_epoch(train_loader)
             val_loss = self.validate(val_loader)
             
+            # Store the losses
+            history['train_loss'].append(train_loss)
+            history['val_loss'].append(val_loss)
+            
             print(f"Epoch {epoch+1}/{self.config['EPOCHS']}, Train Loss: {train_loss:.6f}, Val Loss: {val_loss:.6f}")
 
         print("Training finished.")
+        # Return the history dictionary
+        return history
 
-# --- Plotting Results for RFI Recovery ---
+# --- New Plotting Function for Training History ---
+def plot_training_history(history, config, results_dir):
+    """Plots and saves the training and validation loss history."""
+    
+    epochs = range(1, config['EPOCHS'] + 1)
+    
+    plt.figure(figsize=(10, 6))
+    plt.plot(epochs, history['train_loss'], label='Training Loss', marker='o', linestyle='-', markersize=2)
+    plt.plot(epochs, history['val_loss'], label='Validation Loss', marker='o', linestyle='-', markersize=2)
+    
+    plt.title('Training and Validation Loss History', fontsize=15)
+    plt.xlabel('Epoch', fontsize=12)
+    plt.ylabel(r'Loss (MSE)', fontsize=12)
+    plt.yscale('log') # Log scale is often better for loss plots
+    plt.legend()
+    plt.grid(True, which="both", ls="--", alpha=0.6)
+    
+    # Ensure results directory exists
+    os.makedirs(results_dir, exist_ok=True)
+    plot_path = os.path.join(results_dir, 'training_history.png')
+    plt.savefig(plot_path)
+    plt.close() # Close the figure to free memory
+    print(f"\nTraining history plot saved to {plot_path}")
+
+# --- Plotting Results for RFI Recovery (Unchanged) ---
 @torch.no_grad()
 def plot_rfi_recovery_results(model, config, val_inputs, val_targets, device, results_dir):
     """Generates and saves plot showing true RFI, recovered RFI, and the final clean sky residual."""
@@ -217,10 +249,11 @@ def plot_rfi_recovery_results(model, config, val_inputs, val_targets, device, re
     
     plot_path = os.path.join(results_dir, 'rfi_recovery_examples.png')
     plt.savefig(plot_path)
+    plt.close(fig) # Close the figure to free memory
     print(f"\nResults plot saved to {plot_path}")
 
 
-# --- Main Execution ---
+# --- Main Execution (Modified) ---
 if __name__ == "__main__":
     # 1. Setup Device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -239,10 +272,13 @@ if __name__ == "__main__":
         model = RFINet(input_size=CONFIG['K'], z_dim=CONFIG['Z_DIM']).to(device)
         trainer = Trainer(model, CONFIG, device)
 
-        # 4. Run Training
-        trainer.run(train_loader, val_loader)
+        # 4. Run Training and capture history
+        training_history = trainer.run(train_loader, val_loader)
 
-        # 5. Plot and Save Results
+        # 5. Plot Training History
+        plot_training_history(training_history, CONFIG, CONFIG['RESULTS_DIR'])
+
+        # 6. Plot and Save Results
         plot_rfi_recovery_results(model, CONFIG, val_inputs, val_targets, device, CONFIG['RESULTS_DIR'])
         
-        print("\nTraining complete. Check the 'training_results' directory for the plot.")
+        print("\nTraining complete. Check the 'training_results' directory for the plots.")

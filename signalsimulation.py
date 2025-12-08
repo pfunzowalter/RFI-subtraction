@@ -6,7 +6,7 @@ K = 1024    # Number of samples (time stream length)
 k0 = 256    # Characteristic frequency for the sky signal power spectrum
 beta = 0.0002
 a = 1.0
-NUM_SAMPLES = 10000 
+NUM_SAMPLES = 100000 
 DATASET_FILE = 'astro_rfi_dataset.npz'
 
 # --- Signal Generation Functions ---
