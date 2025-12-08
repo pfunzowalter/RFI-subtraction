@@ -25,7 +25,7 @@ CONFIG = {
 }
 K = CONFIG['K'] # Convenience constant
 
-# --- Data Loading and Custom Dataset (Unchanged) ---
+# --- Data Loading and Custom Dataset ---
 class AstroRFIDataset(Dataset):
     def __init__(self, inputs, targets):
         # inputs are S (S=Tg+Tng), targets are T_ng (RFI)
@@ -65,7 +65,7 @@ def prepare_dataloaders(config, file_path):
     
     return train_loader, val_loader, val_inputs, val_targets
 
-# --- Model Definition: RFINet (Unchanged) ---
+# --- Model Definition: RFINet ---
 class RFINet(nn.Module):
     """3-layer Encoder/Decoder network using Linear layers for 1D time stream RFI recovery."""
     def __init__(self, input_size, z_dim):
@@ -101,7 +101,7 @@ class RFINet(nn.Module):
         # Reshape output back to (batch, 1, K)
         return decoded.view(decoded.size(0), 1, -1)
 
-# --- Trainer Class (Modified) ---
+# --- Trainer Class ---
 class Trainer:
     def __init__(self, model, config, device):
         self.model = model
@@ -160,7 +160,7 @@ class Trainer:
         # Return the history dictionary
         return history
 
-# --- New Plotting Function for Training History ---
+# --- Plotting Function for Training History ---
 def plot_training_history(history, config, results_dir):
     """Plots and saves the training and validation loss history."""
     
@@ -181,10 +181,10 @@ def plot_training_history(history, config, results_dir):
     os.makedirs(results_dir, exist_ok=True)
     plot_path = os.path.join(results_dir, 'training_history.png')
     plt.savefig(plot_path)
-    plt.close() # Close the figure to free memory
+    plt.close() 
     print(f"\nTraining history plot saved to {plot_path}")
 
-# --- Plotting Results for RFI Recovery (Unchanged) ---
+# --- Plotting Results for RFI Recovery ---
 @torch.no_grad()
 def plot_rfi_recovery_results(model, config, val_inputs, val_targets, device, results_dir):
     """Generates and saves plot showing true RFI, recovered RFI, and the final clean sky residual."""
