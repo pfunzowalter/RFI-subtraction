@@ -32,6 +32,7 @@ K = CONFIG['K'] # Convenience constant
 
 # --- MASK STATISTIC FUNCTIONS (KEPT, BUT UNUSED) ---
 # Currently not used for plotting in the results
+
 def define_rfi_mask(K, rfi_params, mask_width_factor=3.0):
     """Placeholder for RFI mask definition."""
     t_samples = np.arange(K)
@@ -74,8 +75,9 @@ def calculate_window_stats(signal, window_size, step_size):
     for start in starts:
         end = start + window_size
         window = signal[start:end]
-        stds.append(np.std(window))
-        # stds.append(np.mean(window))
+        # stds.append(np.std(window))
+        stds.append(np.mean(window))
+        
         
     return np.array(window_centers), np.array(stds)
 
@@ -126,32 +128,45 @@ def prepare_dataloaders(config, file_path):
 
 # --- MODEL DEFINITION: RFINet ---
 class RFINet(nn.Module):
-    """3-layer Encoder/Decoder network using Linear layers for 1D time stream RFI recovery."""
+    """4-layer Encoder/Decoder network using Linear layers for 1D time stream RFI recovery."""
     def __init__(self, input_size, z_dim):
         super(RFINet, self).__init__()
-        h1_dim = input_size // 2 
-        h2_dim = h1_dim // 2 	
+        # Defining hidden dimensions
+        h1_dim = input_size // 2   # e.g., 512
+        h2_dim = h1_dim // 2       # e.g., 256
+        h3_dim = h2_dim // 2       # e.g., 128 (The NEW layer)
         
         self.encoder = nn.Sequential(
             nn.Linear(input_size, h1_dim),
             nn.LeakyReLU(0.02),
             nn.Linear(h1_dim, h2_dim),
             nn.LeakyReLU(0.02),
-            nn.Dropout(0.2), 
-            nn.Linear(h2_dim, z_dim)
-        )
-        self.decoder = nn.Sequential(
-            nn.Linear(z_dim, h2_dim),
+            # --- NEW LAYER START ---
+            nn.Linear(h2_dim, h3_dim),
             nn.LeakyReLU(0.02),
+            # --- NEW LAYER END ---
+            nn.Dropout(0.2), 
+            nn.Linear(h3_dim, z_dim)
+        )
+        
+        self.decoder = nn.Sequential(
+            nn.Linear(z_dim, h3_dim),
+            nn.LeakyReLU(0.02),
+            # --- NEW LAYER START ---
+            nn.Linear(h3_dim, h2_dim),
+            nn.LeakyReLU(0.02),
+            # --- NEW LAYER END ---
             nn.Linear(h2_dim, h1_dim),
             nn.LeakyReLU(0.02),
             nn.Linear(h1_dim, input_size)
         )
 
     def forward(self, x):
+        # Flatten input from (Batch, 1, K) to (Batch, K)
         x = x.view(x.size(0), -1)
         encoded = self.encoder(x)
         decoded = self.decoder(encoded)
+        # Reshape back to (Batch, 1, K) to match target shape
         return decoded.view(decoded.size(0), 1, -1)
 
 # --- TRAINER CLASS ---

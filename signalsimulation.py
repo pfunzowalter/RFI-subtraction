@@ -51,7 +51,7 @@ def generate_rfi_signal(K):
     t_samples = np.arange(K)
     
     # Randomly select RFI parameters
-    A0 = np.random.uniform(0.10, 0.20)
+    A0 = np.random.uniform(0.10, 0.50)
     phi = np.random.uniform(0, 2 * np.pi)
     # nu = np.random.uniform(0.2, 0.7)
     # nu = np.random.uniform(0.3, 0.6)
@@ -63,6 +63,30 @@ def generate_rfi_signal(K):
     # T_ng = A0 * cos(phi + 2 * pi * nu * t) * exp(-(t - t0)^2 / (2 * sigma^2))
     T_ng = A0 * np.cos(phi + 2 * np.pi * nu * t_samples) * np.exp(-(t_samples - t0)**2 / (2 * sigma**2))
     return T_ng
+
+
+# def generate_rfi_signal(K):
+#     """Generates the non-Gaussian RFI signal with randomized position and width."""
+#     t_samples = np.arange(K)
+    
+#     # 1. Amplitude and Phase
+#     A0 = np.random.uniform(0.10, 0.50)
+#     phi = np.random.uniform(0, 2 * np.pi)
+#     nu = np.random.uniform(0.05, 0.25)
+    
+#     # 2. Randomize Location (t0) between 0 and K (e.g., 1024)
+#     t0 = np.random.uniform(0, K)
+    
+#     # 3. Randomize Window Size (Duration) between 100 and 400
+#     # We use this to calculate sigma so the Gaussian scales naturally
+#     window_size = np.random.uniform(100, 400)
+#     sigma = window_size / 6  # 6-sigma covers ~99.7% of the Gaussian area
+    
+#     # T_ng = A0 * cos(phi + 2 * pi * nu * t) * exp(-(t - t0)^2 / (2 * sigma^2))
+#     T_ng = A0 * np.cos(phi + 2 * np.pi * nu * t_samples) * \
+#            np.exp(-(t_samples - t0)**2 / (2 * sigma**2))
+    
+#     return T_ng
 
 def generate_training_data(num_samples, K, k0, beta, a):
     """
