@@ -77,7 +77,6 @@ def calculate_window_stats(signal, window_size, step_size):
         stds.append(np.std(window))
         # stds.append(np.mean(window))
         
-        
     return np.array(window_centers), np.array(stds)
 
 
