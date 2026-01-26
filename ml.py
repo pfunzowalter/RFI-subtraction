@@ -30,58 +30,7 @@ CONFIG = {
 }
 K = CONFIG['K'] # Convenience constant
 
-# --- MASK STATISTIC FUNCTIONS (KEPT, BUT UNUSED) ---
-# Currently not used for plotting in the results
-def define_rfi_mask(K, rfi_params, mask_width_factor=3.0):
-    """Placeholder for RFI mask definition."""
-    t_samples = np.arange(K)
-    t0 = rfi_params.get('t0', K/2)
-    sigma = rfi_params.get('sigma', 10)
-    mask = np.abs(t_samples - t0) <= (mask_width_factor * sigma)
-    N_Omega = np.sum(mask)
-    if N_Omega > 0:
-        min_idx = np.min(np.where(mask)[0])
-        max_idx = np.max(np.where(mask)[0])
-        window_size_rfi = max_idx - min_idx + 1
-    else:
-        window_size_rfi = 1 
-    return mask, N_Omega, window_size_rfi
-
-def calculate_mask_statistic(signal, mask, N_Omega, T_g_true):
-    """Placeholder for Mask Statistic calculation (will return NaN if called without T_g_true)."""
-    # This calculation is now disabled by only running the Windowed STD plot
-    return np.nan 
-
-# --- WINDOWED STATISTIC FUNCTIONS (USED FOR PLOT 4 in recovery functions) ---
-def calculate_window_stats(signal, window_size, step_size):
-    """
-    Calculates the standard deviation for sliding windows across the signal.
-    """
-    K = len(signal)
-    
-    # Ensure starts array doesn't go beyond the signal length minus window size
-    starts = np.arange(0, K - window_size + 1, step_size)
-    if len(starts) == 0 and K >= window_size: # Handle case where step_size > remaining length
-        starts = np.array([0])
-    elif len(starts) == 0: # Cannot form a window
-        return np.array([]), np.array([])
-        
-    # Calculate window centers for plotting
-    window_centers = starts + window_size / 2 - 0.5
-    
-    stds = []
-    
-    for start in starts:
-        end = start + window_size
-        window = signal[start:end]
-        stds.append(np.std(window))
-        # stds.append(np.mean(window))
-        
-    return np.array(window_centers), np.array(stds)
-
-
-
-# --- DATA LOADING AND CUSTOM DATASET ---
+# --- Data Loading and Custom Dataset (Unchanged) ---
 class AstroRFIDataset(Dataset):
     def __init__(self, inputs, targets):
         # inputs are S' (~S), targets are T_ng (RFI)
@@ -124,7 +73,7 @@ def prepare_dataloaders(config, file_path):
     # Return only the 4 essential values: loaders and numpy arrays for plotting
     return train_loader, val_loader, val_inputs, val_targets 
 
-# --- MODEL DEFINITION: RFINet ---
+# --- Model Definition: RFINet (Unchanged) ---
 class RFINet(nn.Module):
     """3-layer Encoder/Decoder network using Linear layers for 1D time stream RFI recovery."""
     def __init__(self, input_size, z_dim):
@@ -154,7 +103,7 @@ class RFINet(nn.Module):
         decoded = self.decoder(encoded)
         return decoded.view(decoded.size(0), 1, -1)
 
-# --- TRAINER CLASS ---
+# --- Trainer Class (Modified) ---
 class Trainer:
     def __init__(self, model, config, device):
         self.model = model
@@ -207,7 +156,7 @@ class Trainer:
         print("Training finished.")
         return history
 
-# --- Plotting Training History ---
+# --- New Plotting Function for Training History ---
 def plot_training_history(history, config, results_dir):
     """Plots and saves the training and validation loss history."""
     epochs = range(1, config['EPOCHS'] + 1)
@@ -226,10 +175,10 @@ def plot_training_history(history, config, results_dir):
     os.makedirs(results_dir, exist_ok=True)
     plot_path = os.path.join(results_dir, 'training_history.png')
     plt.savefig(plot_path)
-    plt.close()
+    plt.close() # Close the figure to free memory
     print(f"\nTraining history plot saved to {plot_path}")
 
-# --- Plotting Results for RFI Recovery (MODIFIED for Windowed STD Plot) ---
+# --- Plotting Results for RFI Recovery (Unchanged) ---
 @torch.no_grad()
 def plot_rfi_recovery_results(model, config, val_inputs, val_targets, device, results_dir):
     """
