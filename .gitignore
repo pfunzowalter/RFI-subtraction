@@ -13,3 +13,7 @@ targeted_rfi_test_*.png
 # Ignore checkpoints if you start training ML models
 *.ckpt
 *.h5
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/*
