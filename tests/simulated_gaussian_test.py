@@ -4,7 +4,8 @@ import scipy.stats as stats
 import seaborn as sns
 import os
 
-def generate_improved_rfi_diagnostic(dataset_file='astro_rfi_dataset.npz', num_examples=3):
+def generate_improved_rfi_diagnostic(dataset_file='training_results/astro_rfi_test_residuals.npz', num_examples=3):
+# def generate_improved_rfi_diagnostic(dataset_file='astro_rfi_dataset.npz', num_examples=3):
     if not os.path.exists(dataset_file):
         print(f"Error: {dataset_file} not found.")
         return

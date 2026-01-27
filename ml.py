@@ -16,7 +16,7 @@ CONFIG = {
     'SPLIT_RATIO': 0.9,
     'BATCH_SIZE': 32,
     'LEARNING_RATE': 0.0002,
-    'EPOCHS': 100,
+    'EPOCHS': 10,
     'BETA1': 0.5,
     'BETA2': 0.999,
     'RESULTS_DIR': 'training_results',
@@ -331,6 +331,52 @@ def plot_rfi_recovery_results(model, config, val_inputs, val_targets, device, re
     plt.close(fig)
     print(f"\nResults plot saved to {plot_path}")
 
+# --- Save Residual and predicted RFI ---
+@torch.no_grad()
+def save_test_predictions(model, val_loader, device, results_dir, filename='test_results.npz'):
+    """
+    Runs inference on the test set and saves:
+    1. The RFI Estimation Error (True RFI - Predicted RFI)
+    2. The Predicted RFI (Model Output)
+    3. The Original Input (for context)
+    """
+    model.eval()
+    all_inputs = []
+    all_targets = []
+    all_predictions = []
+
+    print(f"Generating predictions for the test set...")
+    for inputs, targets in val_loader:
+        inputs_dev = inputs.to(device)
+        outputs = model(inputs_dev)
+        
+        all_inputs.append(inputs.squeeze().numpy())
+        all_targets.append(targets.squeeze().numpy())
+        all_predictions.append(outputs.cpu().squeeze().numpy())
+
+    # Concatenate lists into single numpy arrays
+    inputs_np = np.concatenate(all_inputs, axis=0)
+    targets_np = np.concatenate(all_targets, axis=0)
+    predictions_np = np.concatenate(all_predictions, axis=0)
+
+    # Calculate the RFI Error (Residual RFI after model subtraction)
+    # This represents how much of the RFI the model missed or over-estimated
+    rfi_error_np = targets_np - predictions_np
+
+    os.makedirs(results_dir, exist_ok=True)
+    save_path = os.path.join(results_dir, filename)
+    
+    np.savez(
+        save_path, 
+        inputs=inputs_np,             # Original S'
+        rfi_error=rfi_error_np,       # (T_ng - T_ng_hat)
+        predictions=predictions_np    # T_ng_hat
+    )
+    
+    print(f"Test results saved to {save_path}")
+    print(f"Shape of saved data: {inputs_np.shape}")
+
+
 # --- Main Execution ---
 if __name__ == "__main__":
     # 1. Setup Device
@@ -341,7 +387,7 @@ if __name__ == "__main__":
     data_file_path = CONFIG['DATASET_FILE']
     print(f"Loading data using {data_file_path}...")
     
-    # Now returns 4 values (simplified)
+    # Returns 4 values: loaders and raw numpy arrays for validation
     train_loader, val_loader, val_inputs, val_targets = prepare_dataloaders(CONFIG, data_file_path)
     
     if train_loader is None:
@@ -354,13 +400,29 @@ if __name__ == "__main__":
         # 4. Run Training
         training_history = trainer.run(train_loader, val_loader)
 
-        # 5. Plot Training History
+        # 5. Plot Training History (Loss Curves)
         plot_training_history(training_history, CONFIG, CONFIG['RESULTS_DIR'])
 
-        # 6. Plot and Save Results (No auxiliary data needed for Windowed STD plot)
+        # 6. Plot RFI Recovery for visual inspection (S, Tng, Tg_hat, and STD)
         plot_rfi_recovery_results(
             model, CONFIG, val_inputs, val_targets, device, 
             CONFIG['RESULTS_DIR']
         )
         
-        print("\nTraining complete. Check the 'training_results' directory for the plots.")
+        # 7. NEW: Write out the test dataset with RFI Errors and Predictions
+        # This saves: inputs, (targets - predictions), and predictions
+        test_results_filename = 'astro_rfi_test_residuals.npz'
+        save_test_predictions(
+            model, 
+            val_loader, 
+            device, 
+            CONFIG['RESULTS_DIR'], 
+            filename=test_results_filename
+        )
+        
+        print(f"\n" + "="*50)
+        print("PIPELINE COMPLETE")
+        print(f"Training Results Directory: {CONFIG['RESULTS_DIR']}")
+        print(f"Test Dataset saved as: {test_results_filename}")
+        print(f"Keys saved: ['inputs', 'rfi_error', 'predictions']")
+        print("="*50)

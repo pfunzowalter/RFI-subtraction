@@ -11,6 +11,7 @@ def simulate_and_save_tests(n_samples=1000, filename="gaussian_analysis.png"):
     # 1. Simulate Gaussian Noise (μ=0, σ=1)
     np.random.seed(42)
     noise = np.random.normal(0, 1, n_samples)
+    # noise = np.random.uniform(0, 1, n_samples)
 
     # 2. Setup Plot (1 row, 2 columns)
     fig, axes = plt.subplots(1, 2, figsize=(12, 5))
