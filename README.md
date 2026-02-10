@@ -15,3 +15,8 @@ And then run the ML script for training the the model
 singularity exec /idia/software/containers/ASTRO-GPU-PyTorch-2023-10-10.sif python ml.py
 ```
 Once the training is finished, Results plot are saved to training_results/rfi_recovery_examples.png
+
+If you wish to test if the RFI region is clean, you can run the gassianity tests:
+```bash
+singularity exec /idia/software/containers/ASTRO-PY3.simg python tests/resdual_test.py
+```
