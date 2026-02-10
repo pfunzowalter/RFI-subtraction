@@ -6,7 +6,7 @@ K = 1024    # Number of samples (time stream length)
 k0 = 256    # Characteristic frequency for the sky signal power spectrum
 beta = 0.0002
 a = 1.0
-NUM_SAMPLES = 100000 
+NUM_SAMPLES = 200000 
 DATASET_FILE = 'astro_rfi_dataset.npz'
 
 # --- Signal Generation Functions ---
@@ -51,7 +51,9 @@ def generate_rfi_signal(K):
     t_samples = np.arange(K)
     
     # Randomly select RFI parameters
-    A0 = np.random.uniform(0.10, 0.50)
+    A0 = np.random.uniform(0.70, 1.) #high
+    # A0 = np.random.uniform(0.4, 0.68) #med
+    # A0 = np.random.uniform(0.1, 0.38) #low
     phi = np.random.uniform(0, 2 * np.pi)
     # nu = np.random.uniform(0.2, 0.7)
     # nu = np.random.uniform(0.3, 0.6)

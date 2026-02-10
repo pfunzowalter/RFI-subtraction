@@ -12,11 +12,11 @@ import yaml
 CONFIG = {
     'K': 1024,
     'DATASET_FILE': 'astro_rfi_dataset.npz', 
-    'NUM_SAMPLES': 100000,
+    'NUM_SAMPLES': 200000,
     'SPLIT_RATIO': 0.9,
     'BATCH_SIZE': 32,
     'LEARNING_RATE': 0.0002,
-    'EPOCHS': 10,
+    'EPOCHS': 50,
     'BETA1': 0.5,
     'BETA2': 0.999,
     'RESULTS_DIR': 'training_results',
